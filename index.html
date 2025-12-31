@@ -3,54 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎨 Draw & Guess Party</title>
+  <title>🚢 Battleship Battle</title>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    body { font-family: Arial; text-align: center; background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fad0c4, #ff9a9e); background-size: 400% 400%; animation: gradientShift 15s ease infinite; color: #333; margin: 0; padding: 20px; min-height: 100vh; }
-    @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    body { font-family: Arial; text-align: center; background: linear-gradient(45deg, #001f3f, #0074D9, #7FDBFF); color: white; margin: 0; padding: 20px; min-height: 100vh; }
     h1 { font-size: 36px; text-shadow: 0 0 20px white; }
+    #new-game-btn { padding: 15px 30px; font-size: 24px; background: #ff4136; border: none; border-radius: 15px; cursor: pointer; margin: 20px; }
     #qr-section { margin: 40px; font-size: 24px; }
-    #qr-code { margin: 30px auto; background: white; padding: 20px; border-radius: 20px; display: inline-block; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    #new-game-btn { padding: 15px 30px; font-size: 24px; background: #ff6b6b; color: white; border: none; border-radius: 15px; cursor: pointer; margin: 20px; }
-    #canvas-container { display: none; margin: 20px auto; width: 600px; max-width: 90%; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    canvas { border-radius: 20px; touch-action: none; }
-    #tools { margin: 10px; }
-    #tools button { padding: 10px 20px; margin: 5px; background: #4ecdc4; color: white; border: none; border-radius: 10px; cursor: pointer; }
-    #chat { height: 200px; overflow-y: scroll; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 15px; margin: 20px auto; width: 90%; max-width: 600px; text-align: left; }
-    #chat-input { width: 80%; padding: 10px; font-size: 18px; border-radius: 10px; border: none; }
-    #chat-send { padding: 10px 20px; background: #ff6b6b; color: white; border: none; border-radius: 10px; cursor: pointer; }
-    #word { font-size: 28px; font-weight: bold; margin: 20px; }
+    #qr-code { margin: 30px auto; background: white; padding: 20px; border-radius: 20px; display: inline-block; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     #status { font-size: 28px; margin: 30px; }
-    .correct { color: green; font-weight: bold; animation: bounce 0.5s; }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    #grids { display: flex; justify-content: center; flex-wrap: wrap; gap: 40px; margin: 20px; }
+    .grid { border-collapse: collapse; }
+    .grid td { width: 40px; height: 40px; border: 1px solid #aaa; text-align: center; font-size: 20px; cursor: pointer; }
+    .grid td.ship { background: #333; }
+    .grid td.hit { background: #ff4136; animation: explode 0.5s; }
+    .grid td.miss { background: #7FDBFF; }
+    .grid td:hover { background: rgba(255,255,255,0.2); }
+    @keyframes explode { 0% { transform: scale(1); } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); } }
+    #victory { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 60px; border-radius: 30px; font-size: 48px; color: gold; z-index: 1000; box-shadow: 0 0 60px gold; }
   </style>
 </head>
 <body>
-  <h1>🎨 Draw & Guess Party Game</h1>
-  <button id="new-game-btn" onclick="location.reload()">Start New Game (New QR)</button>
+  <canvas id="confetti-canvas"></canvas>
+  <div id="victory">🚢 YOU SUNK THEIR FLEET! 🏆<br><button onclick="location.reload()" style="margin-top:40px;padding:20px 40px;font-size:28px;">New Battle</button></div>
+  <h1>🚢 Battleship Battle</h1>
+  <button id="new-game-btn" onclick="location.reload()">Start New Battle (New QR)</button>
   <div id="qr-section">
-    <p>Host: Show this QR to friends!</p>
-    <p>Guests: Scan to join and guess!</p>
+    <p>Host: Show this QR!</p>
+    <p>Guest: Scan to join</p>
     <div id="qr-code"></div>
   </div>
-  <div id="status">Waiting for players...</div>
-  <div id="word"></div>
-  <div id="canvas-container">
-    <canvas id="canvas" width="600" height="400"></canvas>
-    <div id="tools">
-      <button onclick="changeColor('black')">Black</button>
-      <button onclick="changeColor('red')">Red</button>
-      <button onclick="changeColor('blue')">Blue</button>
-      <button onclick="changeColor('green')">Green</button>
-      <button onclick="clearCanvas()">Clear</button>
+  <div id="status">Setting up fleet...</div>
+  <div id="grids">
+    <div>
+      <p>Your Fleet</p>
+      <table id="player-grid" class="grid"></table>
+    </div>
+    <div>
+      <p>Opponent's Ocean</p>
+      <table id="opponent-grid" class="grid"></table>
     </div>
   </div>
-  <div id="chat"></div>
-  <input id="chat-input" placeholder="Type guess here..." onkeydown="if(event.keyCode==13) sendGuess()">
-  <button id="chat-send" onclick="sendGuess()">Send</button>
 
   <script>
     const firebaseConfig = {
@@ -66,143 +62,136 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let gameRef, playerId = null, isDrawer = false;
+    let gameRef, playerNum = null;
+    const gridSize = 8;
+    const ships = [4, 3, 3, 2]; // lengths
     const roomId = new URLSearchParams(window.location.search).get('room') || Math.random().toString(36).substring(2, 8);
     if (!new URLSearchParams(window.location.search).get('room')) {
       history.replaceState(null, '', '?room=' + roomId);
     }
     gameRef = db.ref('games/' + roomId);
 
-    const words = ['cat', 'dog', 'house', 'car', 'tree', 'sun', 'pizza', 'phone', 'rocket', 'banana'];
-    let currentWord = '';
-
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-    let color = 'black';
-
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDraw);
-    canvas.addEventListener('mouseout', stopDraw);
-    canvas.addEventListener('touchstart', startDraw);
-    canvas.addEventListener('touchmove', draw);
-    canvas.addEventListener('touchend', stopDraw);
-
-    function startDraw(e) {
-      if (!isDrawer) return;
-      drawing = true;
-      draw(e);
-    }
-
-    function draw(e) {
-      if (!drawing || !isDrawer) return;
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = color;
-
-      let rect = canvas.getBoundingClientRect();
-      let x = (e.clientX || e.touches[0].clientX) - rect.left;
-      let y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-
-      // Sync drawing
-      gameRef.child('drawing').push({x, y, color});
-    }
-
-    function stopDraw() {
-      drawing = false;
-      ctx.beginPath();
-    }
-
-    function changeColor(c) { color = c; }
-
-    function clearCanvas() {
-      if (!isDrawer) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      gameRef.child('drawing').set(null);
+    function playSound(high) {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.value = high ? 800 : 200;
+      oscillator.type = 'square';
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.5);
     }
 
     function confettiBurst() {
-      confetti({particleCount: 200, spread: 70, origin: { y: 0.6 }});
+      confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });
     }
 
-    // QR Code
+    // QR
     new QRCode(document.getElementById("qr-code"), {
       text: window.location.href,
       width: 280,
       height: 280
     });
 
-    // Game Logic
-    gameRef.child('players').on('value', snap => {
-      const players = snap.val() || {};
-      const count = Object.keys(players).length;
-      if (count === 1) {
-        playerId = 'drawer';
-        isDrawer = true;
-        document.getElementById('status').textContent = 'You are the Drawer! Wait for guessers...';
-        document.getElementById('canvas-container').style.display = 'block';
-        currentWord = words[Math.floor(Math.random() * words.length)];
-        document.getElementById('word').textContent = `Draw: ${currentWord.toUpperCase()}`;
-        gameRef.child('word').set(currentWord);
-      } else if (count > 1) {
-        if (playerId === null) playerId = 'guesser' + count;
-        document.getElementById('status').textContent = 'Game in progress! Guess the drawing';
-        document.getElementById('canvas-container').style.display = 'block';
-        document.getElementById('word').textContent = 'Guess the word!';
-      }
-      if (count > 10) document.getElementById('status').textContent = 'Room full — start new game!';
-    });
-
-    gameRef.child('drawing').on('child_added', snap => {
-      const point = snap.val();
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = point.color;
-      ctx.lineTo(point.x, point.y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(point.x, point.y);
-    });
-
-    gameRef.child('chat').on('child_added', snap => {
-      const msg = snap.val();
-      const chat = document.getElementById('chat');
-      const div = document.createElement('div');
-      div.textContent = msg.player + ': ' + msg.text;
-      if (msg.correct) div.className = 'correct';
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-      if (msg.correct) confettiBurst();
-    });
-
-    function sendGuess() {
-      const input = document.getElementById('chat-input');
-      const guess = input.value.trim().toLowerCase();
-      if (!guess) return;
-      input.value = '';
-      gameRef.child('word').once('value', snap => {
-        const word = snap.val();
-        const correct = guess === word;
-        gameRef.child('chat').push({
-          player: playerId,
-          text: guess,
-          correct
-        });
-        if (correct) {
-          document.getElementById('status').textContent = 'Correct! New round starting...';
-          setTimeout(() => location.reload(), 3000);
+    function createGrid(tableId, clickable) {
+      const table = document.getElementById(tableId);
+      for (let i = 0; i < gridSize; i++) {
+        const row = table.insertRow();
+        for (let j = 0; j < gridSize; j++) {
+          const cell = row.insertCell();
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          if (clickable) cell.onclick = () => fire(i, j);
         }
-      });
+      }
     }
 
-    // Clear old drawing on new round
-    gameRef.child('drawing').set(null);
+    createGrid('player-grid', false);
+    createGrid('opponent-grid', true);
+
+    gameRef.child('players').transaction(current => {
+      if (!current) current = { count: 0 };
+      if (current.count >= 2) return;
+      current.count++;
+      return current;
+    }, (error, committed, snapshot) => {
+      if (error || !committed) {
+        document.getElementById('status').textContent = 'Battle full — start new!';
+        return;
+      }
+      playerNum = snapshot.val().count;
+      document.getElementById('status').textContent = `You are Player ${playerNum} — Placing ships...`;
+      placeShips();
+    });
+
+    function placeShips() {
+      const myGrid = document.getElementById('player-grid');
+      let placed = 0;
+      const place = () => {
+        if (placed >= ships.length) {
+          gameRef.child(`ships/${playerNum}`).set(true);
+          document.getElementById('status').textContent = 'Waiting for opponent...';
+          return;
+        }
+        const length = ships[placed];
+        const horizontal = Math.random() < 0.5;
+        const row = Math.floor(Math.random() * gridSize);
+        const col = Math.floor(Math.random() * (gridSize - (horizontal ? length : 1)));
+        // simple placement - no overlap check for demo
+        for (let i = 0; i < length; i++) {
+          const r = horizontal ? row : row + i;
+          const c = horizontal ? col + i : col;
+          myGrid.rows[r].cells[c].className = 'ship';
+        }
+        placed++;
+        place();
+      };
+      place();
+    }
+
+    function fire(row, col) {
+      if (document.getElementById('status').textContent.includes('Your turn') === false) return;
+      gameRef.child(`shots/${playerNum}`).push({row, col});
+      playSound(true);
+    }
+
+    gameRef.on('value', snap => {
+      const game = snap.val() || {};
+      const opponent = 3 - playerNum;
+      if (game.shots && game.shots[opponent]) {
+        Object.values(game.shots[opponent]).forEach(shot => {
+          const cell = document.getElementById('player-grid').rows[shot.row].cells[shot.col];
+          if (cell.className === 'ship') {
+            cell.className = 'hit';
+            confettiBurst();
+            playSound(false);
+          } else if (!cell.className) {
+            cell.className = 'miss';
+          }
+        });
+      }
+      if (game.shots && game.shots[playerNum]) {
+        Object.values(game.shots[playerNum]).forEach(shot => {
+          const cell = document.getElementById('opponent-grid').rows[shot.row].cells[shot.col];
+          if (!cell.className) cell.className = 'miss';
+        });
+      }
+      // Simple win check
+      if (game.ships && game.ships[opponent]) {
+        document.getElementById('status').textContent = 'Your turn!';
+      }
+      // Victory (simplified)
+      if (game.shots && game.shots[playerNum]) {
+        const hits = Object.values(game.shots[playerNum]).filter(shot => document.getElementById('opponent-grid').rows[shot.row].cells[shot.col].className === 'hit').length;
+        if (hits >= 12) { // total ship cells
+          document.getElementById('victory').style.display = 'block';
+          confettiBurst();
+        }
+      }
+    });
   </script>
 </body>
 </html>
