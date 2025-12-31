@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     body { font-family: 'Arial Black', Arial; text-align: center; background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c); background-size: 400% 400%; animation: gradientShift 15s ease infinite; color: white; margin: 0; padding: 20px; min-height: 100vh; }
     @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -15,7 +15,7 @@
     @keyframes glow { from { text-shadow: 0 0 10px white; } to { text-shadow: 0 0 30px gold; } }
     #invite { font-size: 22px; margin: 30px; }
     #invite button { padding: 12px 24px; font-size: 18px; background: #ff6b6b; border: none; border-radius: 10px; cursor: pointer; margin: 10px; }
-    #qr-code { margin: 20px auto; background: white; padding: 10px; border-radius: 15px; display: inline-block; }
+    #qr-code { margin: 20px auto; background: white; padding: 10px; border-radius: 15px; display: inline-block; width: 220px; }
     #status { font-size: 28px; margin: 30px; }
     #choices { display: none; margin-top: 40px; }
     .rps-btn { width: 28%; margin: 10px; font-size: 48px; padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s; }
@@ -40,7 +40,7 @@
   <div id="victory">🏆 YOU WIN THE MATCH! 🏆<br><button onclick="location.reload()" style="margin-top:40px;padding:20px 40px;font-size:28px;">Play Again</button></div>
   <h1>🔥 Rock Paper Scissors Battle</h1>
   <div id="invite">
-    <p>Send this link (or scan QR) to a friend!</p>
+    <p>Send this link or scan QR to invite a friend!</p>
     <button onclick="copyLink()">Copy Invite Link</button>
     <p id="copyMsg" style="margin-top:10px;font-size:18px;"></p>
     <div id="qr-code"></div>
@@ -109,7 +109,7 @@
       });
     }
 
-    // Generate QR code
+    // Generate QR code for current URL
     new QRCode(document.getElementById("qr-code"), {
       text: window.location.href,
       width: 200,
