@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live RPS Battle 🚀</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; background: linear-gradient(#667eea 0%, #764ba2 100%); color: white; margin: 0; padding: 20px; min-height: 100vh; }
+    input, button { padding: 15px; margin: 10px; font-size: 18px; border: none; border-radius: 10px; width: 90%; max-width: 300px; }
+    button { background: #ff6b6b; color: white; cursor: pointer; font-weight: bold; }
+    button:hover, button.active { background: #ff5252; transform: scale(1.05); }
+    button:disabled { background: gray; transform: none; }
+    #status { font-size: 24px; margin: 20px; }
+    #choices { display: none; }
+    .rps-btn { width: 28%; background: #4ecdc4; margin: 5px; font-size: 24px; }
+    .score { font-size: 28px; margin: 10px; }
+    .winner { animation: flash 0.5s infinite; color: gold !important; }
+    @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    @media (max-width: 600px) { .rps-btn { width: 30%; font-size: 20px; } }
+  </style>
+</head>
+<body>
+  <h1>🔥 Live Rock Paper Scissors</h1>
+  <p>Share room code with a friend!</p>
+  <input id="room" placeholder="Enter Room (e.g., battle123)" maxlength="20">
+  <button onclick="joinRoom()">Join/Create Room</button>
+  <div id="status">Waiting...</div>
+  <div id="scores"></div>
+  <div id="choices">
+    <button class="rps-btn" onclick="pick('rock')">🪨 Rock</button>
+    <button class="rps-btn" onclick="pick('paper')">📄 Paper</button>
+    <button class="rps-btn" onclick="pick('scissors')">✂️ Scissors</button>
+  </div>
+  <div id="result"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxwj4gjfwCGjgsWCpEHDyB8B03cpGs",
+      authDomain: "it-s-a-game-c564d.firebaseapp.com",
+      databaseURL: "https://it-s-a-game-c564d-default-rtdb.firebaseio.com/",
+      projectId: "it-s-a-game-c564d",
+      storageBucket: "it-s-a-game-c564d.appspot.com",
+      messagingSenderId: "833723070612",
+      appId: "1:833723070612:web:b09c51fc80fa964b9c81",
+      measurementId: "G-R21LB7V3KH"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let gameRef, playerNum = null, roomId = null;
+
+    const choices = { rock: 0, paper: 1, scissors: 2 };
+    const beats = { 0: 2, 1: 0, 2: 1 };
+
+    function joinRoom() {
+      roomId = document.getElementById('room').value.trim().toLowerCase();
+      if (!roomId) return alert('Enter a room code!');
+      gameRef = db.ref('games/' + roomId);
+      document.getElementById('status').textContent = 'Joining...';
+
+      gameRef.child('players').transaction(current => {
+        if (!current) current = { count: 0 };
+        if (current.count >= 2) return;
+        current.count++;
+        return current;
+      }, (error, committed, snapshot) => {
+        if (error) return alert('Error joining!');
+        const data = snapshot.val();
+        if (data.count === 1) playerNum = 1;
+        else if (data.count === 2) playerNum = 2;
+        else return alert('Room full!');
+        initGame();
+      });
+    }
+
+    function initGame() {
+      gameRef.child('scores').set({1: 0, 2: 0 });
+      document.getElementById('status').innerHTML = `You are Player ${playerNum} ${playerNum===1 ? '🪨' : '📄'} | Waiting for opponent...`;
+      document.getElementById('choices').style.display = 'block';
+      gameRef.child(`choices/${playerNum}`).onDisconnect().remove();
+
+      gameRef.on('value', snap => {
+        const game = snap.val() || {};
+        updateUI(game);
+      });
+    }
+
+    function pick(choice) {
+      gameRef.child('choices').child(playerNum).set(choice);
+      document.querySelectorAll('.rps-btn').forEach(btn => btn.disabled = true);
+    }
+
+    function updateUI(game) {
+      const myChoice = game.choices?.[playerNum];
+      const oppChoice = game.choices?.[3-playerNum];
+      const scores = game.scores || {1:0, 2:0};
+
+      document.getElementById('scores').innerHTML = `
+        <div class="score">Player 1 🪨: ${scores[1] || 0}</div>
+        <div class="score">Player 2 📄: ${scores[2] || 0}</div>
+      `;
+
+      if (myChoice && oppChoice) {
+        const result = getResult(myChoice, oppChoice);
+        document.getElementById('result').innerHTML = `
+          <div class="winner">You picked ${emojiFor(myChoice)} | Opp: ${emojiFor(oppChoice)} | ${result}</div>
+        `;
+        setTimeout(() => {
+          const newScores = {...scores};
+          if (result === 'You Win!') newScores[playerNum]++;
+          else if (result === 'You Lose!') newScores[3-playerNum]++;
+          gameRef.child('scores').set(newScores);
+          gameRef.child('choices').set({1: null, 2: null});
+          document.querySelectorAll('.rps-btn').forEach(btn => btn.disabled = false);
+          document.getElementById('result').innerHTML = '';
+        }, 2000);
+      } else if (myChoice) {
+        document.getElementById('status').textContent = 'Waiting for opponent...';
+      }
+    }
+
+    function getResult(my, opp) {
+      const myVal = choices[my], oppVal = choices[opp];
+      if (myVal === oppVal) return 'Tie!';
+      return beats[myVal] === oppVal ? 'You Win! 🎉' : 'You Lose! 😤';
+    }
+
+    function emojiFor(choice) {
+      return {rock: '🪨', paper: '📄', scissors: '✂️'}[choice];
+    }
+  </script>
+</body>
+</html>
