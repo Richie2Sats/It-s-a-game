@@ -7,17 +7,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <style>
     body { font-family: 'Arial Black', Arial; text-align: center; background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c); background-size: 400% 400%; animation: gradientShift 15s ease infinite; color: white; margin: 0; padding: 20px; min-height: 100vh; }
     @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    h1 { text-shadow: 0 0 20px rgba(255,255,255,0.8); animation: glow 2s infinite alternate; font-size: 36px; }
+    h1 { text-shadow: 0 0 20px rgba(255,255,255,0.8); animation: glow 2s infinite alternate; }
     @keyframes glow { from { text-shadow: 0 0 10px white; } to { text-shadow: 0 0 30px gold; } }
-    #invite { font-size: 24px; margin: 20px; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 15px; }
-    #invite button { padding: 12px 24px; font-size: 20px; background: #ff6b6b; border: none; border-radius: 10px; cursor: pointer; }
+    #invite { font-size: 22px; margin: 30px; }
+    #invite button { padding: 12px 24px; font-size: 18px; background: #ff6b6b; border: none; border-radius: 10px; cursor: pointer; margin: 10px; }
+    #qr-code { margin: 20px auto; background: white; padding: 10px; border-radius: 15px; display: inline-block; }
     #status { font-size: 28px; margin: 30px; }
     #choices { display: none; margin-top: 40px; }
-    .rps-btn { width: 28%; background: linear-gradient(45deg, #4ecdc4, #44a08d); margin: 10px; font-size: 48px; padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s; }
-    .rps-btn:hover { transform: scale(1.2) rotate(10deg); box-shadow: 0 20px 50px rgba(78,205,196,0.8); }
+    .rps-btn { width: 28%; margin: 10px; font-size: 48px; padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s; }
+    .rps-btn.rock { background: #333; color: white; } /* Dark grey rock */
+    .rps-btn.paper { background: linear-gradient(45deg, #4ecdc4, #44a08d); }
+    .rps-btn.scissors { background: linear-gradient(45deg, #ff6b6b, #ee5a52); }
+    .rps-btn:hover { transform: scale(1.2) rotate(10deg); box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     .rps-btn:active { animation: shake 0.5s; }
     @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-15px); } 75% { transform: translateX(15px); } }
     .score { font-size: 40px; margin: 20px; font-weight: bold; animation: scorePop 0.6s; }
@@ -33,18 +38,19 @@
 <body>
   <canvas id="confetti-canvas"></canvas>
   <div id="victory">🏆 YOU WIN THE MATCH! 🏆<br><button onclick="location.reload()" style="margin-top:40px;padding:20px 40px;font-size:28px;">Play Again</button></div>
-  <h1>🔥 Rock Paper Scissors</h1>
+  <h1>🔥 Rock Paper Scissors Battle</h1>
   <div id="invite">
-    <p>Send this link to a friend to play!</p>
+    <p>Send this link (or scan QR) to a friend!</p>
     <button onclick="copyLink()">Copy Invite Link</button>
-    <p id="copyMsg" style="margin-top:10px; font-size:18px;"></p>
+    <p id="copyMsg" style="margin-top:10px;font-size:18px;"></p>
+    <div id="qr-code"></div>
   </div>
   <div id="status">Waiting for opponent...</div>
   <div id="scores"></div>
   <div id="choices">
-    <button class="rps-btn" onclick="pick('rock')">🪨</button>
-    <button class="rps-btn" onclick="pick('paper')">📄</button>
-    <button class="rps-btn" onclick="pick('scissors')">✂️</button>
+    <button class="rps-btn rock" onclick="pick('rock')">🪨</button>
+    <button class="rps-btn paper" onclick="pick('paper')">📄</button>
+    <button class="rps-btn scissors" onclick="pick('scissors')">✂️</button>
   </div>
   <div id="result"></div>
 
@@ -97,12 +103,21 @@
     }
 
     function copyLink() {
-      const link = window.location.href;
-      navigator.clipboard.writeText(link).then(() => {
-        document.getElementById('copyMsg').textContent = 'Link copied! Send to friend';
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        document.getElementById('copyMsg').textContent = 'Link copied!';
         setTimeout(() => document.getElementById('copyMsg').textContent = '', 3000);
       });
     }
+
+    // Generate QR code
+    new QRCode(document.getElementById("qr-code"), {
+      text: window.location.href,
+      width: 200,
+      height: 200,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
 
     gameRef.child('players').transaction(current => {
       if (!current) current = { count: 0 };
@@ -111,7 +126,7 @@
       return current;
     }, (error, committed, snapshot) => {
       if (error || !committed) {
-        document.getElementById('status').textContent = 'Room full — start a new game!';
+        document.getElementById('status').textContent = 'Room full — refresh for new game!';
         return;
       }
       playerNum = snapshot.val().count;
