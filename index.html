@@ -3,42 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🔥 Live RPS Battle</title>
+  <title>🔥 RPS Battle</title>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     body { font-family: 'Arial Black', Arial; text-align: center; background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c); background-size: 400% 400%; animation: gradientShift 15s ease infinite; color: white; margin: 0; padding: 20px; min-height: 100vh; }
     @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    h1 { text-shadow: 0 0 20px rgba(255,255,255,0.8); animation: glow 2s infinite alternate; }
+    h1 { text-shadow: 0 0 20px rgba(255,255,255,0.8); animation: glow 2s infinite alternate; font-size: 36px; }
     @keyframes glow { from { text-shadow: 0 0 10px white; } to { text-shadow: 0 0 30px gold; } }
-    input, button { padding: 15px; margin: 10px; font-size: 18px; border: none; border-radius: 15px; width: 90%; max-width: 320px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); transition: all 0.3s; }
-    button { background: linear-gradient(45deg, #ff6b6b, #ee5a52); color: white; cursor: pointer; font-weight: bold; }
-    button:hover { transform: scale(1.05) translateY(-5px); box-shadow: 0 15px 30px rgba(255,107,107,0.6); }
-    #status { font-size: 26px; margin: 20px; text-shadow: 0 2px 10px black; }
-    #choices { display: none; }
-    .rps-btn { width: 28%; background: linear-gradient(45deg, #4ecdc4, #44a08d); margin: 8px; font-size: 36px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); transition: all 0.2s; }
-    .rps-btn:hover { transform: scale(1.15) rotate(8deg); box-shadow: 0 15px 40px rgba(78,205,196,0.8); }
+    #invite { font-size: 24px; margin: 20px; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 15px; }
+    #invite button { padding: 12px 24px; font-size: 20px; background: #ff6b6b; border: none; border-radius: 10px; cursor: pointer; }
+    #status { font-size: 28px; margin: 30px; }
+    #choices { display: none; margin-top: 40px; }
+    .rps-btn { width: 28%; background: linear-gradient(45deg, #4ecdc4, #44a08d); margin: 10px; font-size: 48px; padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s; }
+    .rps-btn:hover { transform: scale(1.2) rotate(10deg); box-shadow: 0 20px 50px rgba(78,205,196,0.8); }
     .rps-btn:active { animation: shake 0.5s; }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-    .score { font-size: 34px; margin: 15px; font-weight: bold; animation: scorePop 0.6s; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-15px); } 75% { transform: translateX(15px); } }
+    .score { font-size: 40px; margin: 20px; font-weight: bold; animation: scorePop 0.6s; }
     @keyframes scorePop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    .winner { animation: flash 0.5s infinite, bounce 0.8s infinite; font-size: 32px; color: gold !important; text-shadow: 0 0 30px gold; }
+    .winner { animation: flash 0.5s infinite, bounce 0.8s infinite; font-size: 36px; color: gold !important; text-shadow: 0 0 30px gold; }
     @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
     #confetti-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 999; }
-    #victory { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 50px; border-radius: 30px; font-size: 48px; color: gold; z-index: 1000; animation: victoryPulse 1s infinite; box-shadow: 0 0 50px gold; }
+    #victory { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 60px; border-radius: 30px; font-size: 48px; color: gold; z-index: 1000; animation: victoryPulse 1s infinite; box-shadow: 0 0 60px gold; }
     @keyframes victoryPulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
   </style>
 </head>
 <body>
   <canvas id="confetti-canvas"></canvas>
-  <div id="victory">🏆 YOU WIN THE MATCH! 🏆<br><button onclick="location.reload()" style="margin-top:30px;padding:15px 30px;font-size:24px;">Play Again</button></div>
-  <h1>🔥 Live Rock Paper Scissors Battle</h1>
-  <p>Share room code with a friend!</p>
-  <input id="room" placeholder="Room code (e.g., battle123)">
-  <button onclick="joinRoom()">Join / Create Room</button>
-  <div id="status">Waiting to connect...</div>
+  <div id="victory">🏆 YOU WIN THE MATCH! 🏆<br><button onclick="location.reload()" style="margin-top:40px;padding:20px 40px;font-size:28px;">Play Again</button></div>
+  <h1>🔥 Rock Paper Scissors</h1>
+  <div id="invite">
+    <p>Send this link to a friend to play!</p>
+    <button onclick="copyLink()">Copy Invite Link</button>
+    <p id="copyMsg" style="margin-top:10px; font-size:18px;"></p>
+  </div>
+  <div id="status">Waiting for opponent...</div>
   <div id="scores"></div>
   <div id="choices">
     <button class="rps-btn" onclick="pick('rock')">🪨</button>
@@ -61,7 +62,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let gameRef, playerNum = null, roomId = null;
+    let gameRef, playerNum = null;
+    const roomId = new URLSearchParams(window.location.search).get('room') || Math.random().toString(36).substring(2, 8);
+    if (!new URLSearchParams(window.location.search).get('room')) {
+      history.replaceState(null, '', '?room=' + roomId);
+    }
+    gameRef = db.ref('games/' + roomId);
+
     const choices = { rock: 0, paper: 1, scissors: 2 };
     const beats = { 0: 2, 1: 0, 2: 1 };
     const winTarget = 5;
@@ -89,25 +96,27 @@
       });
     }
 
-    function joinRoom() {
-      roomId = document.getElementById('room').value.trim().toLowerCase();
-      if (!roomId) return alert('Enter a room code!');
-      gameRef = db.ref('games/' + roomId);
-      document.getElementById('status').textContent = 'Joining room...';
-      playSound(600, 0.2);
-
-      gameRef.child('players').transaction(current => {
-        if (!current) current = { count: 0 };
-        if (current.count >= 2) return;
-        current.count++;
-        return current;
-      }, (error, committed, snapshot) => {
-        if (error || !committed) return alert('Room full or error!');
-        const data = snapshot.val();
-        playerNum = data.count;
-        initGame();
+    function copyLink() {
+      const link = window.location.href;
+      navigator.clipboard.writeText(link).then(() => {
+        document.getElementById('copyMsg').textContent = 'Link copied! Send to friend';
+        setTimeout(() => document.getElementById('copyMsg').textContent = '', 3000);
       });
     }
+
+    gameRef.child('players').transaction(current => {
+      if (!current) current = { count: 0 };
+      if (current.count >= 2) return;
+      current.count++;
+      return current;
+    }, (error, committed, snapshot) => {
+      if (error || !committed) {
+        document.getElementById('status').textContent = 'Room full — start a new game!';
+        return;
+      }
+      playerNum = snapshot.val().count;
+      initGame();
+    });
 
     function initGame() {
       gameRef.child('scores').set({1: 0, 2: 0});
